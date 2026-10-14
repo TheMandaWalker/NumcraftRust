@@ -9,7 +9,7 @@ use crate::{
     camera::Camera,
     constants::{
         BlockType, EntityType,
-        player::{FLY_SPEED, JUMP_FORCE, MAX_WALKING_VELOCITY, WALK_FORCE},
+        player::{FLY_SPEED, JUMP_FORCE, MAX_WALKING_VELOCITY, WALK_FORCE, WOODEN_TOOL_SPEED},
     },
     entity::{Entity, item::ItemEntityCustomData},
     game::GameMode,
@@ -51,6 +51,19 @@ impl Player {
             (mesh, result.block_pos)
         } else {
             (mesh, Vector3::repeat(0))
+        }
+    }
+
+    /// How much faster the held item breaks this block, compared to bare hands
+    fn get_break_speed(&self, block_type: BlockType, selected_slot: usize) -> f32 {
+        let held_tool = self
+            .inventory
+            .get_item_type_at_slot_index(selected_slot)
+            .and_then(|item_type| item_type.get_tool_kind());
+
+        match (block_type.get_harvest_tool(), held_tool) {
+            (Some(needed), Some(held)) if needed == held => WOODEN_TOOL_SPEED,
+            _ => 1.,
         }
     }
 
@@ -193,7 +206,9 @@ impl Player {
                         .breaking_block_pos
                         .is_some_and(|pos| pos == ray_cast.block_pos)
                     {
-                        self.breaking_state_timer -= delta_time;
+                        let break_speed =
+                            self.get_break_speed(ray_cast.block_type, hud.selected_slot);
+                        self.breaking_state_timer -= delta_time * break_speed;
                         if self.breaking_state_timer <= 0. {
                             world.replace_block_and_drop_item(ray_cast.block_pos, BlockType::Air);
                             self.breaking_block_pos = None;
@@ -225,9 +240,13 @@ impl Player {
                     .get_block_in_world(block_pos)
                     .is_some_and(|b| b.is_air())
                     && physic_engine.can_place_block(world, block_pos)
-                    && let Some(item_type) = self.inventory.take_one(0 + hud.selected_slot)
+                    && let Some(item_type) = self
+                        .inventory
+                        .get_item_type_at_slot_index(hud.selected_slot)
                     && let Some(block_type) = item_type.get_matching_block_type()
                 {
+                    // Only take the item once we know it can be placed
+                    self.inventory.take_one(hud.selected_slot);
                     world
                         .chunks_manager
                         .set_block_in_world(block_pos, block_type);

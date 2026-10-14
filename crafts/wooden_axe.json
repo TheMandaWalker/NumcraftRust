@@ -1,0 +1,15 @@
+{
+    "name": "wooden_axe",
+    "pattern" : [
+        "xx ",
+        "xs ",
+        " s "
+    ],
+    "strict_shape": true,
+    "palette": {
+        "x": 9,
+        "s": 12
+    },
+    "result": 14,
+    "result_amount": 1
+}

@@ -1,0 +1,14 @@
+{
+    "name": "stick",
+    "pattern" : [
+        "x  ",
+        "x  ",
+        "   "
+    ],
+    "strict_shape": false,
+    "palette": {
+        "x": 9
+    },
+    "result": 12,
+    "result_amount": 4
+}

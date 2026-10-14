@@ -148,12 +148,16 @@ impl Craft {
     }
 }
 
-const CRAFTS: [Craft; 5] = [
+const CRAFTS: [Craft; 9] = [
     Craft::new(include_bytes!("../../target/crafts/planks.bin")),
     Craft::new(include_bytes!("../../target/crafts/stone.bin")),
     Craft::new(include_bytes!("../../target/crafts/grass.bin")),
     Craft::new(include_bytes!("../../target/crafts/crafting_table.bin")),
     Craft::new(include_bytes!("../../target/crafts/bricks.bin")),
+    Craft::new(include_bytes!("../../target/crafts/stick.bin")),
+    Craft::new(include_bytes!("../../target/crafts/wooden_pickaxe.bin")),
+    Craft::new(include_bytes!("../../target/crafts/wooden_axe.bin")),
+    Craft::new(include_bytes!("../../target/crafts/wooden_shovel.bin")),
 ];
 
 pub struct CraftingManager {

@@ -247,6 +247,22 @@ impl Game {
             10,
             ItemStack::new(crate::constants::ItemType::BricksBlock, 1, true),
         );
+        creative_inventory.replace_slot_item_stack(
+            11,
+            ItemStack::new(crate::constants::ItemType::Stick, 1, true),
+        );
+        creative_inventory.replace_slot_item_stack(
+            12,
+            ItemStack::new(crate::constants::ItemType::WoodenPickaxe, 1, true),
+        );
+        creative_inventory.replace_slot_item_stack(
+            13,
+            ItemStack::new(crate::constants::ItemType::WoodenAxe, 1, true),
+        );
+        creative_inventory.replace_slot_item_stack(
+            14,
+            ItemStack::new(crate::constants::ItemType::WoodenShovel, 1, true),
+        );
 
         let mut inventories = [&mut self.player.inventory, &mut creative_inventory];
 

@@ -1,0 +1,15 @@
+{
+    "name": "wooden_shovel",
+    "pattern" : [
+        "x  ",
+        "s  ",
+        "s  "
+    ],
+    "strict_shape": true,
+    "palette": {
+        "x": 9,
+        "s": 12
+    },
+    "result": 15,
+    "result_amount": 1
+}

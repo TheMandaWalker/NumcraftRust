@@ -61,6 +61,8 @@ pub mod player {
     pub const WALK_FORCE: f32 = 20.0;
     pub const MAX_WALKING_VELOCITY: f32 = 4.;
     pub const JUMP_FORCE: f32 = 5.;
+
+    pub const WOODEN_TOOL_SPEED: f32 = 2.;
 }
 
 pub mod physic {
@@ -96,6 +98,13 @@ pub enum EntityType {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ToolKind {
+    Pickaxe,
+    Axe,
+    Shovel,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BlockType {
     Air = 0,
     Stone = 1,
@@ -128,6 +137,11 @@ pub enum ItemType {
 
     CraftingTableBlock = 10,
     BricksBlock = 11,
+
+    Stick = 12,
+    WoodenPickaxe = 13,
+    WoodenAxe = 14,
+    WoodenShovel = 15,
 }
 
 impl ItemType {
@@ -146,6 +160,10 @@ impl ItemType {
             ItemType::PlanksBlock => 10,
             ItemType::CraftingTableBlock => 12,
             ItemType::BricksBlock => 11,
+            ItemType::Stick => 14,
+            ItemType::WoodenPickaxe => 15,
+            ItemType::WoodenAxe => 16,
+            ItemType::WoodenShovel => 17,
         }
     }
 
@@ -164,6 +182,19 @@ impl ItemType {
             9 => Some(ItemType::PlanksBlock),
             10 => Some(ItemType::CraftingTableBlock),
             11 => Some(ItemType::BricksBlock),
+            12 => Some(ItemType::Stick),
+            13 => Some(ItemType::WoodenPickaxe),
+            14 => Some(ItemType::WoodenAxe),
+            15 => Some(ItemType::WoodenShovel),
+            _ => None,
+        }
+    }
+
+    pub fn get_tool_kind(&self) -> Option<ToolKind> {
+        match *self {
+            ItemType::WoodenPickaxe => Some(ToolKind::Pickaxe),
+            ItemType::WoodenAxe => Some(ToolKind::Axe),
+            ItemType::WoodenShovel => Some(ToolKind::Shovel),
             _ => None,
         }
     }
@@ -182,6 +213,10 @@ impl ItemType {
             ItemType::PlanksBlock => 64,
             ItemType::CraftingTableBlock => 64,
             ItemType::BricksBlock => 64,
+            ItemType::Stick => 64,
+            ItemType::WoodenPickaxe => 1,
+            ItemType::WoodenAxe => 1,
+            ItemType::WoodenShovel => 1,
         }
     }
 
@@ -199,6 +234,10 @@ impl ItemType {
             ItemType::PlanksBlock => Some(BlockType::Planks),
             ItemType::CraftingTableBlock => Some(BlockType::CraftingTable),
             ItemType::BricksBlock => Some(BlockType::Bricks),
+            ItemType::Stick => None,
+            ItemType::WoodenPickaxe => None,
+            ItemType::WoodenAxe => None,
+            ItemType::WoodenShovel => None,
         }
     }
 }
@@ -253,6 +292,18 @@ impl BlockType {
         }
     }
 
+    pub const fn get_harvest_tool(&self) -> Option<ToolKind> {
+        match self {
+            BlockType::Stone
+            | BlockType::Cobblestone
+            | BlockType::CraftingTable
+            | BlockType::Bricks => Some(ToolKind::Pickaxe),
+            BlockType::Log | BlockType::Planks => Some(ToolKind::Axe),
+            BlockType::Dirt | BlockType::Grass | BlockType::Sand => Some(ToolKind::Shovel),
+            _ => None,
+        }
+    }
+
     pub const fn get_hardness(&self) -> f32 {
         match self {
             BlockType::Air => 0.,
@@ -302,6 +353,8 @@ pub fn get_quad_color_from_texture_id(id: u8) -> Color565 {
         11 => Color565::from_rgb888(170, 70, 50),
         12 => Color565::from_rgb888(154, 126, 62),
         13 => Color565::from_rgb888(120, 95, 50),
+        14 => Color565::from_rgb888(120, 85, 45),
+        15 | 16 | 17 => Color565::from_rgb888(150, 150, 150),
 
         _ => Color565::from_rgb888(0, 0, 0),
         // 255 is reserved for block outline
