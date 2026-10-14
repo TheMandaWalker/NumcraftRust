@@ -107,6 +107,8 @@ pub enum BlockType {
     Log = 7,
     Leaves = 8,
     Planks = 9,
+    CraftingTable = 10,
+    Bricks = 11,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -123,6 +125,9 @@ pub enum ItemType {
     LogBlock = 7,
     LeavesBlock = 8,
     PlanksBlock = 9,
+
+    CraftingTableBlock = 10,
+    BricksBlock = 11,
 }
 
 impl ItemType {
@@ -139,6 +144,8 @@ impl ItemType {
             ItemType::LogBlock => 8,
             ItemType::LeavesBlock => 9,
             ItemType::PlanksBlock => 10,
+            ItemType::CraftingTableBlock => 12,
+            ItemType::BricksBlock => 11,
         }
     }
 
@@ -155,6 +162,8 @@ impl ItemType {
             7 => Some(ItemType::LogBlock),
             8 => Some(ItemType::LeavesBlock),
             9 => Some(ItemType::PlanksBlock),
+            10 => Some(ItemType::CraftingTableBlock),
+            11 => Some(ItemType::BricksBlock),
             _ => None,
         }
     }
@@ -171,6 +180,8 @@ impl ItemType {
             ItemType::LogBlock => 64,
             ItemType::LeavesBlock => 64,
             ItemType::PlanksBlock => 64,
+            ItemType::CraftingTableBlock => 64,
+            ItemType::BricksBlock => 64,
         }
     }
 
@@ -186,6 +197,8 @@ impl ItemType {
             ItemType::LogBlock => Some(BlockType::Log),
             ItemType::LeavesBlock => Some(BlockType::Leaves),
             ItemType::PlanksBlock => Some(BlockType::Planks),
+            ItemType::CraftingTableBlock => Some(BlockType::CraftingTable),
+            ItemType::BricksBlock => Some(BlockType::Bricks),
         }
     }
 }
@@ -213,6 +226,12 @@ impl BlockType {
             BlockType::Log => 8,
             BlockType::Leaves => 9,
             BlockType::Planks => 10,
+            BlockType::CraftingTable => match dir {
+                QuadDir::Top => 12,
+                QuadDir::Bottom => 10,
+                _ => 13,
+            },
+            BlockType::Bricks => 11,
         }
     }
 
@@ -228,6 +247,8 @@ impl BlockType {
             7 => Some(BlockType::Log),
             8 => Some(BlockType::Leaves),
             9 => Some(BlockType::Planks),
+            10 => Some(BlockType::CraftingTable),
+            11 => Some(BlockType::Bricks),
             _ => None,
         }
     }
@@ -244,6 +265,8 @@ impl BlockType {
             BlockType::Log => 1.5,
             BlockType::Leaves => 0.3,
             BlockType::Planks => 1.2,
+            BlockType::CraftingTable => 2.5,
+            BlockType::Bricks => 2.,
         }
     }
 
@@ -259,6 +282,8 @@ impl BlockType {
             BlockType::Log => ItemType::LogBlock,
             BlockType::Leaves => ItemType::LeavesBlock,
             BlockType::Planks => ItemType::PlanksBlock,
+            BlockType::CraftingTable => ItemType::CraftingTableBlock,
+            BlockType::Bricks => ItemType::BricksBlock,
         }
     }
 }
@@ -274,6 +299,9 @@ pub fn get_quad_color_from_texture_id(id: u8) -> Color565 {
         8 => Color565::from_rgb888(79, 53, 30),
         9 => Color565::from_rgb888(36, 75, 37),
         10 => Color565::from_rgb888(152, 124, 61),
+        11 => Color565::from_rgb888(170, 70, 50),
+        12 => Color565::from_rgb888(154, 126, 62),
+        13 => Color565::from_rgb888(120, 95, 50),
 
         _ => Color565::from_rgb888(0, 0, 0),
         // 255 is reserved for block outline

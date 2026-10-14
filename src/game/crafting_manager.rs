@@ -148,16 +148,19 @@ impl Craft {
     }
 }
 
-const CRAFTS: [Craft; 3] = [
+const CRAFTS: [Craft; 5] = [
     Craft::new(include_bytes!("../../target/crafts/planks.bin")),
     Craft::new(include_bytes!("../../target/crafts/stone.bin")),
     Craft::new(include_bytes!("../../target/crafts/grass.bin")),
+    Craft::new(include_bytes!("../../target/crafts/crafting_table.bin")),
+    Craft::new(include_bytes!("../../target/crafts/bricks.bin")),
 ];
 
 pub struct CraftingManager {
     pub crafting_inventory_2x2: Inventory,
     pub crafting_inventory_3x3: Inventory,
-    valid_craft: bool,
+    valid_craft_2x2: bool,
+    valid_craft_3x3: bool,
 }
 
 impl CraftingManager {
@@ -167,53 +170,72 @@ impl CraftingManager {
         CraftingManager {
             crafting_inventory_2x2,
             crafting_inventory_3x3,
-            valid_craft: false,
+            valid_craft_2x2: false,
+            valid_craft_3x3: false,
         }
     }
 
-    pub fn update_2x2(&mut self) {
+    /// Update the result slot of a square crafting grid of `size` x `size` slots.
+    /// The result slot is the slot just after the grid.
+    fn update_grid(inventory: &mut Inventory, valid_craft: &mut bool, size: usize) {
+        let result_slot = size * size;
+
         // Remove the recipies if the player picked up the item
-        if self.valid_craft
-            && self
-                .crafting_inventory_2x2
-                .get_item_type_at_slot_index(4)
-                .unwrap()
-                == ItemType::Air
+        if *valid_craft
+            && inventory.get_item_type_at_slot_index(result_slot).unwrap() == ItemType::Air
         {
-            for i in 0..=3 {
-                self.crafting_inventory_2x2.take_one(i);
+            for i in 0..result_slot {
+                inventory.take_one(i);
             }
         }
 
         let mut grid = [[ItemType::Air; 3]; 3];
 
-        // The inventory slots indexes must be from 0 to 3 included
-        for x in 0..2 {
-            for y in 0..2 {
-                grid[x][y] = self
-                    .crafting_inventory_2x2
-                    .get_item_type_at_slot_index(x + y * 2)
-                    .unwrap(); // If it fails, a cosmic particle just hit the calculators Ram! Incredible!
+        // The inventory slots indexes must be from 0 to result_slot - 1
+        for x in 0..size {
+            for y in 0..size {
+                // If it fails, a cosmic particle just hit the calculators Ram! Incredible!
+                grid[x][y] = inventory.get_item_type_at_slot_index(x + y * size).unwrap();
             }
         }
 
         // Check for all crafts to match with our grid
-        if self.crafting_inventory_2x2.modified {
+        if inventory.modified {
             let mut found_craft = false;
             for craft in CRAFTS {
                 if craft.matches(grid) {
-                    self.crafting_inventory_2x2
-                        .replace_slot_item_stack(4, craft.result);
-                    self.valid_craft = true;
+                    inventory.replace_slot_item_stack(result_slot, craft.result);
+                    *valid_craft = true;
                     found_craft = true;
                     break;
                 }
             }
             if !found_craft {
-                self.crafting_inventory_2x2
-                    .replace_slot_item_stack(4, ItemStack::void());
-                self.valid_craft = false;
+                inventory.replace_slot_item_stack(result_slot, ItemStack::void());
+                *valid_craft = false;
             }
         }
+    }
+
+    pub fn update_2x2(&mut self) {
+        Self::update_grid(
+            &mut self.crafting_inventory_2x2,
+            &mut self.valid_craft_2x2,
+            2,
+        );
+    }
+
+    pub fn update_3x3(&mut self) {
+        Self::update_grid(
+            &mut self.crafting_inventory_3x3,
+            &mut self.valid_craft_3x3,
+            3,
+        );
+    }
+
+    /// Empty the 3x3 grid and forget its last craft. Used when the crafting table is closed.
+    pub fn clear_3x3(&mut self) {
+        self.crafting_inventory_3x3.fill(ItemStack::void());
+        self.valid_craft_3x3 = false;
     }
 }
