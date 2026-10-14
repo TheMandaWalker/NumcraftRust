@@ -1,0 +1,15 @@
+{
+    "name": "stone_axe",
+    "pattern" : [
+        "xx ",
+        "xs ",
+        " s "
+    ],
+    "strict_shape": true,
+    "palette": {
+        "x": 5,
+        "s": 12
+    },
+    "result": 17,
+    "result_amount": 1
+}

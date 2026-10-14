@@ -1,0 +1,15 @@
+{
+    "name": "stone_shovel",
+    "pattern" : [
+        "x  ",
+        "s  ",
+        "s  "
+    ],
+    "strict_shape": true,
+    "palette": {
+        "x": 5,
+        "s": 12
+    },
+    "result": 18,
+    "result_amount": 1
+}

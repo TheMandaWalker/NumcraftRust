@@ -9,7 +9,7 @@ use crate::{
     camera::Camera,
     constants::{
         BlockType, EntityType,
-        player::{FLY_SPEED, JUMP_FORCE, MAX_WALKING_VELOCITY, WALK_FORCE, WOODEN_TOOL_SPEED},
+        player::{FLY_SPEED, JUMP_FORCE, MAX_WALKING_VELOCITY, WALK_FORCE},
     },
     entity::{Entity, item::ItemEntityCustomData},
     game::GameMode,
@@ -56,13 +56,12 @@ impl Player {
 
     /// How much faster the held item breaks this block, compared to bare hands
     fn get_break_speed(&self, block_type: BlockType, selected_slot: usize) -> f32 {
-        let held_tool = self
-            .inventory
-            .get_item_type_at_slot_index(selected_slot)
-            .and_then(|item_type| item_type.get_tool_kind());
+        let Some(held_item) = self.inventory.get_item_type_at_slot_index(selected_slot) else {
+            return 1.;
+        };
 
-        match (block_type.get_harvest_tool(), held_tool) {
-            (Some(needed), Some(held)) if needed == held => WOODEN_TOOL_SPEED,
+        match (block_type.get_harvest_tool(), held_item.get_tool_kind()) {
+            (Some(needed), Some(held)) if needed == held => held_item.get_tool_speed(),
             _ => 1.,
         }
     }

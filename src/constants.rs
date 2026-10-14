@@ -63,6 +63,7 @@ pub mod player {
     pub const JUMP_FORCE: f32 = 5.;
 
     pub const WOODEN_TOOL_SPEED: f32 = 2.;
+    pub const STONE_TOOL_SPEED: f32 = 3.;
 }
 
 pub mod physic {
@@ -142,6 +143,10 @@ pub enum ItemType {
     WoodenPickaxe = 13,
     WoodenAxe = 14,
     WoodenShovel = 15,
+
+    StonePickaxe = 16,
+    StoneAxe = 17,
+    StoneShovel = 18,
 }
 
 impl ItemType {
@@ -164,6 +169,9 @@ impl ItemType {
             ItemType::WoodenPickaxe => 15,
             ItemType::WoodenAxe => 16,
             ItemType::WoodenShovel => 17,
+            ItemType::StonePickaxe => 19,
+            ItemType::StoneAxe => 20,
+            ItemType::StoneShovel => 21,
         }
     }
 
@@ -186,6 +194,9 @@ impl ItemType {
             13 => Some(ItemType::WoodenPickaxe),
             14 => Some(ItemType::WoodenAxe),
             15 => Some(ItemType::WoodenShovel),
+            16 => Some(ItemType::StonePickaxe),
+            17 => Some(ItemType::StoneAxe),
+            18 => Some(ItemType::StoneShovel),
             _ => None,
         }
     }
@@ -195,7 +206,23 @@ impl ItemType {
             ItemType::WoodenPickaxe => Some(ToolKind::Pickaxe),
             ItemType::WoodenAxe => Some(ToolKind::Axe),
             ItemType::WoodenShovel => Some(ToolKind::Shovel),
+            ItemType::StonePickaxe => Some(ToolKind::Pickaxe),
+            ItemType::StoneAxe => Some(ToolKind::Axe),
+            ItemType::StoneShovel => Some(ToolKind::Shovel),
             _ => None,
+        }
+    }
+
+    /// How much faster this tool breaks the blocks it is made for
+    pub fn get_tool_speed(&self) -> f32 {
+        match *self {
+            ItemType::WoodenPickaxe | ItemType::WoodenAxe | ItemType::WoodenShovel => {
+                player::WOODEN_TOOL_SPEED
+            }
+            ItemType::StonePickaxe | ItemType::StoneAxe | ItemType::StoneShovel => {
+                player::STONE_TOOL_SPEED
+            }
+            _ => 1.,
         }
     }
 
@@ -217,6 +244,9 @@ impl ItemType {
             ItemType::WoodenPickaxe => 1,
             ItemType::WoodenAxe => 1,
             ItemType::WoodenShovel => 1,
+            ItemType::StonePickaxe => 1,
+            ItemType::StoneAxe => 1,
+            ItemType::StoneShovel => 1,
         }
     }
 
@@ -238,6 +268,9 @@ impl ItemType {
             ItemType::WoodenPickaxe => None,
             ItemType::WoodenAxe => None,
             ItemType::WoodenShovel => None,
+            ItemType::StonePickaxe => None,
+            ItemType::StoneAxe => None,
+            ItemType::StoneShovel => None,
         }
     }
 }
@@ -355,6 +388,7 @@ pub fn get_quad_color_from_texture_id(id: u8) -> Color565 {
         13 => Color565::from_rgb888(120, 95, 50),
         14 => Color565::from_rgb888(120, 85, 45),
         15 | 16 | 17 => Color565::from_rgb888(150, 150, 150),
+        19 | 20 | 21 => Color565::from_rgb888(110, 110, 110),
 
         _ => Color565::from_rgb888(0, 0, 0),
         // 255 is reserved for block outline
