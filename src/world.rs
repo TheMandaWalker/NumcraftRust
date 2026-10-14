@@ -282,7 +282,13 @@ impl World {
         );
     }
 
-    pub fn replace_block_and_drop_item(&mut self, pos: Vector3<isize>, block_type: BlockType) {
+    /// Replace a block. Its drop is spawned only if `can_drop` is true
+    pub fn replace_block_and_drop_item(
+        &mut self,
+        pos: Vector3<isize>,
+        block_type: BlockType,
+        can_drop: bool,
+    ) {
         if let Some(current_block) = self.chunks_manager.get_block_in_world(pos) {
             if current_block == BlockType::Chest {
                 self.drop_chest_contents(pos);
@@ -297,7 +303,7 @@ impl World {
             }
 
             let drop_type = current_block.get_dropped_item_type();
-            if drop_type != ItemType::Air {
+            if drop_type != ItemType::Air && can_drop {
                 self.chunks_manager.set_block_in_world(pos, block_type);
                 self.spawn_item_entity(
                     pos.map(|v| v as f32 + 0.5),

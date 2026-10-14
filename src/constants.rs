@@ -131,6 +131,10 @@ pub enum BlockType {
     CraftingTable = 10,
     Bricks = 11,
     Chest = 12,
+    CoalOre = 13,
+    IronOre = 14,
+    GoldOre = 15,
+    DiamondOre = 16,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -163,6 +167,13 @@ pub enum ItemType {
     ChestBlock = 19,
 
     Apple = 20,
+
+    Coal = 21,
+    RawIron = 22,
+    RawGold = 23,
+    IronIngot = 24,
+    GoldIngot = 25,
+    Diamond = 26,
 }
 
 impl ItemType {
@@ -190,6 +201,12 @@ impl ItemType {
             ItemType::StoneShovel => 21,
             ItemType::ChestBlock => 18,
             ItemType::Apple => 22,
+            ItemType::Coal => 27,
+            ItemType::RawIron => 28,
+            ItemType::RawGold => 29,
+            ItemType::IronIngot => 30,
+            ItemType::GoldIngot => 31,
+            ItemType::Diamond => 32,
         }
     }
 
@@ -217,6 +234,12 @@ impl ItemType {
             18 => Some(ItemType::StoneShovel),
             19 => Some(ItemType::ChestBlock),
             20 => Some(ItemType::Apple),
+            21 => Some(ItemType::Coal),
+            22 => Some(ItemType::RawIron),
+            23 => Some(ItemType::RawGold),
+            24 => Some(ItemType::IronIngot),
+            25 => Some(ItemType::GoldIngot),
+            26 => Some(ItemType::Diamond),
             _ => None,
         }
     }
@@ -230,6 +253,15 @@ impl ItemType {
             ItemType::StoneAxe => Some(ToolKind::Axe),
             ItemType::StoneShovel => Some(ToolKind::Shovel),
             _ => None,
+        }
+    }
+
+    /// The tool tier, compared with `BlockType::get_harvest_level`. Bare hands are tier 0
+    pub fn get_tool_tier(&self) -> u8 {
+        match *self {
+            ItemType::WoodenPickaxe | ItemType::WoodenAxe | ItemType::WoodenShovel => 1,
+            ItemType::StonePickaxe | ItemType::StoneAxe | ItemType::StoneShovel => 2,
+            _ => 0,
         }
     }
 
@@ -269,6 +301,12 @@ impl ItemType {
             ItemType::StoneShovel => 1,
             ItemType::ChestBlock => 64,
             ItemType::Apple => 64,
+            ItemType::Coal => 64,
+            ItemType::RawIron => 64,
+            ItemType::RawGold => 64,
+            ItemType::IronIngot => 64,
+            ItemType::GoldIngot => 64,
+            ItemType::Diamond => 64,
         }
     }
 
@@ -295,6 +333,12 @@ impl ItemType {
             ItemType::StoneShovel => None,
             ItemType::ChestBlock => Some(BlockType::Chest),
             ItemType::Apple => None,
+            ItemType::Coal => None,
+            ItemType::RawIron => None,
+            ItemType::RawGold => None,
+            ItemType::IronIngot => None,
+            ItemType::GoldIngot => None,
+            ItemType::Diamond => None,
         }
     }
 }
@@ -328,6 +372,10 @@ impl BlockType {
                 _ => 13,
             },
             BlockType::Bricks => 11,
+            BlockType::CoalOre => 23,
+            BlockType::IronOre => 24,
+            BlockType::GoldOre => 25,
+            BlockType::DiamondOre => 26,
             BlockType::Chest => match dir {
                 QuadDir::Top | QuadDir::Bottom => 10,
                 _ => 18,
@@ -350,7 +398,21 @@ impl BlockType {
             10 => Some(BlockType::CraftingTable),
             11 => Some(BlockType::Bricks),
             12 => Some(BlockType::Chest),
+            13 => Some(BlockType::CoalOre),
+            14 => Some(BlockType::IronOre),
+            15 => Some(BlockType::GoldOre),
+            16 => Some(BlockType::DiamondOre),
             _ => None,
+        }
+    }
+
+    /// The tool tier needed to get the drop of this block. Below it, the block breaks with no drop
+    pub const fn get_harvest_level(&self) -> u8 {
+        match self {
+            BlockType::CoalOre => 1,
+            BlockType::IronOre => 2,
+            BlockType::GoldOre | BlockType::DiamondOre => 3,
+            _ => 0,
         }
     }
 
@@ -359,7 +421,11 @@ impl BlockType {
             BlockType::Stone
             | BlockType::Cobblestone
             | BlockType::CraftingTable
-            | BlockType::Bricks => Some(ToolKind::Pickaxe),
+            | BlockType::Bricks
+            | BlockType::CoalOre
+            | BlockType::IronOre
+            | BlockType::GoldOre
+            | BlockType::DiamondOre => Some(ToolKind::Pickaxe),
             BlockType::Log | BlockType::Planks => Some(ToolKind::Axe),
             BlockType::Dirt | BlockType::Grass | BlockType::Sand => Some(ToolKind::Shovel),
             _ => None,
@@ -381,6 +447,10 @@ impl BlockType {
             BlockType::CraftingTable => 2.5,
             BlockType::Bricks => 2.,
             BlockType::Chest => 2.5,
+            BlockType::CoalOre
+            | BlockType::IronOre
+            | BlockType::GoldOre
+            | BlockType::DiamondOre => 3.,
         }
     }
 
@@ -399,6 +469,10 @@ impl BlockType {
             BlockType::CraftingTable => ItemType::CraftingTableBlock,
             BlockType::Bricks => ItemType::BricksBlock,
             BlockType::Chest => ItemType::ChestBlock,
+            BlockType::CoalOre => ItemType::Coal,
+            BlockType::IronOre => ItemType::RawIron,
+            BlockType::GoldOre => ItemType::RawGold,
+            BlockType::DiamondOre => ItemType::Diamond,
         }
     }
 }
@@ -421,6 +495,16 @@ pub fn get_quad_color_from_texture_id(id: u8) -> Color565 {
         15 | 16 | 17 => Color565::from_rgb888(150, 150, 150),
         18 => Color565::from_rgb888(120, 85, 45),
         22 => Color565::from_rgb888(200, 40, 40),
+        23 => Color565::from_rgb888(120, 120, 120),
+        24 => Color565::from_rgb888(200, 150, 110),
+        25 => Color565::from_rgb888(230, 200, 70),
+        26 => Color565::from_rgb888(90, 220, 230),
+        27 => Color565::from_rgb888(30, 30, 30),
+        28 => Color565::from_rgb888(190, 150, 120),
+        29 => Color565::from_rgb888(230, 200, 80),
+        30 => Color565::from_rgb888(200, 200, 200),
+        31 => Color565::from_rgb888(240, 210, 90),
+        32 => Color565::from_rgb888(120, 230, 240),
         19 | 20 | 21 => Color565::from_rgb888(110, 110, 110),
 
         _ => Color565::from_rgb888(0, 0, 0),

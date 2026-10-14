@@ -5,7 +5,7 @@ use rand_core::{RngCore, SeedableRng};
 use rand_xorshift::XorShiftRng;
 
 use crate::{
-    constants::world::*,
+    constants::{BlockType, world::*},
     world::{
         chunk_manager::ChunksManager,
         structures::{Structure, TREE1},
@@ -83,6 +83,39 @@ impl WorldGenerator {
                             Vector3::new(x as usize, y as usize, z as usize),
                             crate::constants::BlockType::Stone,
                         );
+                    }
+                }
+            }
+        }
+
+        // Ores replace some of the stone. Deeper ores are rarer
+        let mut ore_rng = XorShiftRng::seed_from_u64(
+            (chunk_pos.x as u64).wrapping_mul(73856093)
+                ^ (chunk_pos.y as u64).wrapping_mul(19349663)
+                ^ (chunk_pos.z as u64).wrapping_mul(83492791)
+                ^ (self.noise.seed as u64),
+        );
+        for x in 0..CHUNK_SIZE_I {
+            for z in 0..CHUNK_SIZE_I {
+                for y in 0..CHUNK_SIZE_I {
+                    let local_pos = Vector3::new(x as usize, y as usize, z as usize);
+                    if chunk.get_at(local_pos.map(|v| v as isize)) != Some(BlockType::Stone) {
+                        continue;
+                    }
+                    let block_y = chunk_block_pos.y + y;
+                    let ore = if block_y <= 4 && ore_rng.next_u32() % 300 == 0 {
+                        Some(BlockType::DiamondOre)
+                    } else if block_y <= 6 && ore_rng.next_u32() % 120 == 0 {
+                        Some(BlockType::GoldOre)
+                    } else if block_y <= 12 && ore_rng.next_u32() % 40 == 0 {
+                        Some(BlockType::IronOre)
+                    } else if ore_rng.next_u32() % 25 == 0 {
+                        Some(BlockType::CoalOre)
+                    } else {
+                        None
+                    };
+                    if let Some(ore) = ore {
+                        chunk.set_at(local_pos, ore);
                     }
                 }
             }

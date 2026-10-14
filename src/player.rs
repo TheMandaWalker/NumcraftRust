@@ -291,7 +291,16 @@ impl Player {
                             self.get_break_speed(ray_cast.block_type, hud.selected_slot);
                         self.breaking_state_timer -= delta_time * break_speed;
                         if self.breaking_state_timer <= 0. {
-                            world.replace_block_and_drop_item(ray_cast.block_pos, BlockType::Air);
+                            let held_tier = self
+                                .inventory
+                                .get_item_type_at_slot_index(hud.selected_slot)
+                                .map_or(0, |item_type| item_type.get_tool_tier());
+                            let can_drop = held_tier >= ray_cast.block_type.get_harvest_level();
+                            world.replace_block_and_drop_item(
+                                ray_cast.block_pos,
+                                BlockType::Air,
+                                can_drop,
+                            );
                             self.breaking_block_pos = None;
                             self.breaking_state_timer = 0.;
                         }
