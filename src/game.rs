@@ -157,6 +157,26 @@ impl Game {
         GameState::InGame
     }
 
+    /// Bring the player back to the spawn with full health and hunger
+    fn respawn_player(&mut self) {
+        let spawn_pos = Vector3::new(
+            16.5,
+            (self.world.get_highest_block(16, 16) + 1) as f32,
+            16.5,
+        );
+
+        let player_entity = self.world.get_player_entity_mut();
+        player_entity.pos = spawn_pos;
+        player_entity.velocity = Vector3::repeat(0.0);
+        self.player.reset_stats();
+
+        Renderer::show_msg(
+            &["You died.", "You respawn at the spawn point."],
+            Color565::from_rgb888(255, 100, 100),
+        );
+        self.input_manager.wait_delay_or_ok(3000);
+    }
+
     /// The game loop. Handle physic, rendering etc ...
     pub fn game_loop(&mut self) -> GameState {
         loop {
@@ -200,8 +220,14 @@ impl Game {
                 self.timing_manager.get_delta_time(),
                 &self.settings,
             );
+            if self.player.is_dead() {
+                self.respawn_player();
+            }
+
             self.hud.update(&self.input_manager, &self.player);
             self.hud.sync(&self.player);
+            self.hud.show_survival_stats =
+                self.save_manager.get_game_mode() == GameMode::Survival;
 
             self.renderer.camera.update(
                 self.timing_manager.get_delta_time(),

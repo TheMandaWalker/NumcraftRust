@@ -5,6 +5,9 @@ pub struct Hud {
     pub selected_slot: usize,
     pub breaking_progress: Option<f32>,
     pub show_debug: bool,
+    pub health: f32,
+    pub hunger: f32,
+    pub show_survival_stats: bool,
 }
 
 impl Hud {
@@ -14,6 +17,9 @@ impl Hud {
             selected_slot: 0,
             breaking_progress: None,
             show_debug: false,
+            health: 0.,
+            hunger: 0.,
+            show_survival_stats: false,
         }
     }
     pub fn update(&mut self, input_manager: &InputManager, player: &Player) {
@@ -44,6 +50,8 @@ impl Hud {
         for i in 0..6 {
             self.slots[i] = inventory_slots[0 + i];
         }
+        self.health = player.get_health();
+        self.hunger = player.get_hunger();
     }
 
     pub fn get_slots(&self) -> &[ItemStack; 6] {

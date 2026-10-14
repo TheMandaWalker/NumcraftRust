@@ -8,8 +8,12 @@ use nalgebra::{ComplexField, Vector3};
 use crate::{
     camera::Camera,
     constants::{
-        BlockType, EntityType,
-        player::{FLY_SPEED, JUMP_FORCE, MAX_WALKING_VELOCITY, WALK_FORCE},
+        BlockType, EntityType, ItemType,
+        player::{
+            APPLE_HUNGER_RESTORE, FALL_DAMAGE_PER_BLOCK, FALL_SAFE_HEIGHT, FLY_SPEED,
+            HEALTH_REGEN_MIN_HUNGER, HEALTH_REGEN_PER_SECOND, HUNGER_DRAIN_PER_SECOND, JUMP_FORCE,
+            MAX_HEALTH, MAX_HUNGER, MAX_WALKING_VELOCITY, STARVATION_DAMAGE_PER_SECOND, WALK_FORCE,
+        },
     },
     entity::{Entity, item::ItemEntityCustomData},
     game::GameMode,
@@ -30,6 +34,10 @@ pub struct Player {
     pub inventory: Inventory,
     breaking_state_timer: f32,
     breaking_block_pos: Option<Vector3<isize>>,
+    health: f32,
+    hunger: f32,
+    was_on_floor: bool,
+    air_top_y: f32,
 }
 
 impl Player {
@@ -39,6 +47,10 @@ impl Player {
             inventory: Inventory::new(24),
             breaking_state_timer: 0.,
             breaking_block_pos: None,
+            health: MAX_HEALTH,
+            hunger: MAX_HUNGER,
+            was_on_floor: false,
+            air_top_y: 0.,
         }
     }
 
@@ -64,6 +76,71 @@ impl Player {
             (Some(needed), Some(held)) if needed == held => held_item.get_tool_speed(),
             _ => 1.,
         }
+    }
+
+    pub fn get_health(&self) -> f32 {
+        self.health
+    }
+
+    pub fn get_hunger(&self) -> f32 {
+        self.hunger
+    }
+
+    pub fn is_dead(&self) -> bool {
+        self.health <= 0.
+    }
+
+    /// Put health and hunger back to full, used after a respawn
+    pub fn reset_stats(&mut self) {
+        self.health = MAX_HEALTH;
+        self.hunger = MAX_HUNGER;
+        self.was_on_floor = false;
+    }
+
+    /// Fall damage, hunger, health regeneration and starvation. Survival only
+    fn update_survival_stats(&mut self, world: &World, game_mode: GameMode, delta_time: f32) {
+        if game_mode != GameMode::Survival {
+            return;
+        }
+
+        let player_entity = world.get_player_entity();
+        let is_on_floor = player_entity.is_on_floor;
+        let y = player_entity.pos.y;
+
+        if is_on_floor {
+            if !self.was_on_floor {
+                // Just landed: hurt only if the fall was longer than the safe height
+                let fall_height = self.air_top_y - y;
+                self.health -= (fall_height - FALL_SAFE_HEIGHT).max(0.) * FALL_DAMAGE_PER_BLOCK;
+            }
+            self.air_top_y = y;
+        } else {
+            // Highest point reached since leaving the ground
+            self.air_top_y = self.air_top_y.max(y);
+        }
+        self.was_on_floor = is_on_floor;
+
+        self.hunger = (self.hunger - HUNGER_DRAIN_PER_SECOND * delta_time).max(0.);
+        if self.hunger <= 0. {
+            self.health -= STARVATION_DAMAGE_PER_SECOND * delta_time;
+        } else if self.hunger >= HEALTH_REGEN_MIN_HUNGER {
+            self.health += HEALTH_REGEN_PER_SECOND * delta_time;
+        }
+        self.health = self.health.clamp(0., MAX_HEALTH);
+    }
+
+    /// Eat the held item if it is food. Returns true if something was eaten
+    fn try_eat(&mut self, game_mode: GameMode, selected_slot: usize) -> bool {
+        if game_mode != GameMode::Survival || self.hunger >= MAX_HUNGER {
+            return false;
+        }
+        if self.inventory.get_item_type_at_slot_index(selected_slot) != Some(ItemType::Apple) {
+            return false;
+        }
+
+        self.inventory.take_one(selected_slot);
+        self.hunger = (self.hunger + APPLE_HUNGER_RESTORE).min(MAX_HUNGER);
+        true
     }
 
     pub fn get_block_breaking_progress(&self) -> Option<f32> {
@@ -189,6 +266,8 @@ impl Player {
             player_entity.velocity.z = max_velocity.y;
         }
 
+        self.update_survival_stats(world, game_mode, delta_time);
+
         // Break Block
         if game_mode == GameMode::Creative {
             if input_manager.is_just_pressed(nadk::keyboard::Key::Back) {
@@ -233,7 +312,10 @@ impl Player {
             }
         }
 
-        if input_manager.is_just_pressed(nadk::keyboard::Key::Ok) {
+        // OK eats the held food first, otherwise it places a block
+        if input_manager.is_just_pressed(nadk::keyboard::Key::Ok)
+            && !self.try_eat(game_mode, hud.selected_slot)
+        {
             // Place Block
             if let Some(result) = &self.ray_cast_result {
                 let block_pos = result.block_pos + result.face_dir.get_normal_vector();

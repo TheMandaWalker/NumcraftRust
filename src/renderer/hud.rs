@@ -88,6 +88,60 @@ impl Renderer {
         }
 
         self.draw_breaking_indicator(tile_x, tile_y, hud);
+        self.draw_survival_stats(tile_x, tile_y, hud);
+    }
+
+    /// Health (hearts) and hunger (drumsticks) rows, above the hotbar
+    pub fn draw_survival_stats(&mut self, tile_x: usize, tile_y: usize, hud: &Hud) {
+        if !hud.show_survival_stats || tile_y != 3 {
+            return;
+        }
+
+        // Screen positions are moved into the tile, parts outside it are clipped
+        let tile_origin_x = (tile_x * SCREEN_TILE_WIDTH) as isize;
+        let tile_origin_y = (tile_y * SCREEN_TILE_HEIGHT) as isize;
+
+        for icon in 0..10 {
+            // One icon stands for 2 points of health or hunger
+            let offset = icon as f32 * 2.;
+            let icon_x = icon as isize * 11;
+
+            self.draw_stat_icon(
+                60 + icon_x - tile_origin_x,
+                184 - tile_origin_y,
+                hud.health - offset,
+                Color565::from_rgb888(220, 40, 40),
+            );
+            self.draw_stat_icon(
+                172 + icon_x - tile_origin_x,
+                184 - tile_origin_y,
+                hud.hunger - offset,
+                Color565::from_rgb888(210, 140, 40),
+            );
+        }
+    }
+
+    fn draw_stat_icon(&mut self, x: isize, y: isize, value: f32, color: Color565) {
+        let fill = (value / 2.).clamp(0., 1.);
+
+        self.push_unbounded_rect_uniform_on_frame_buffer(
+            UnBoundedScreenRect {
+                x,
+                y,
+                width: 8,
+                height: 8,
+            },
+            Color565::from_rgb888(60, 60, 60),
+        );
+        self.push_unbounded_rect_uniform_on_frame_buffer(
+            UnBoundedScreenRect {
+                x,
+                y,
+                width: (8. * fill) as isize,
+                height: 8,
+            },
+            color,
+        );
     }
 
     pub fn draw_breaking_indicator(&mut self, tile_x: usize, tile_y: usize, hud: &Hud) {

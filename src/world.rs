@@ -10,6 +10,7 @@ use crate::constants::{BlockType, EntityType, ItemType};
 use crate::entity::Entity;
 use crate::entity::item::ItemEntityCustomData;
 use crate::inventory::{Inventory, ItemStack};
+use crate::nadk::random::get_random_in_range;
 use crate::world::chunk_manager::ChunksManager;
 use crate::world::world_generator::WorldGenerator;
 
@@ -285,6 +286,14 @@ impl World {
         if let Some(current_block) = self.chunks_manager.get_block_in_world(pos) {
             if current_block == BlockType::Chest {
                 self.drop_chest_contents(pos);
+            }
+
+            // Leaves sometimes drop an apple, 1 time out of 10
+            if current_block == BlockType::Leaves && get_random_in_range(0, 10) == 0 {
+                self.spawn_item_entity(
+                    pos.map(|v| v as f32 + 0.5),
+                    ItemStack::new(ItemType::Apple, 1, false),
+                );
             }
 
             let drop_type = current_block.get_dropped_item_type();

@@ -65,6 +65,16 @@ pub mod player {
 
     pub const WOODEN_TOOL_SPEED: f32 = 2.;
     pub const STONE_TOOL_SPEED: f32 = 3.;
+
+    pub const MAX_HEALTH: f32 = 20.;
+    pub const MAX_HUNGER: f32 = 20.;
+    pub const HUNGER_DRAIN_PER_SECOND: f32 = 1. / 40.;
+    pub const HEALTH_REGEN_PER_SECOND: f32 = 0.5;
+    pub const HEALTH_REGEN_MIN_HUNGER: f32 = 12.;
+    pub const STARVATION_DAMAGE_PER_SECOND: f32 = 0.5;
+    pub const FALL_SAFE_HEIGHT: f32 = 3.;
+    pub const FALL_DAMAGE_PER_BLOCK: f32 = 1.;
+    pub const APPLE_HUNGER_RESTORE: f32 = 4.;
 }
 
 pub mod physic {
@@ -151,6 +161,8 @@ pub enum ItemType {
     StoneShovel = 18,
 
     ChestBlock = 19,
+
+    Apple = 20,
 }
 
 impl ItemType {
@@ -177,6 +189,7 @@ impl ItemType {
             ItemType::StoneAxe => 20,
             ItemType::StoneShovel => 21,
             ItemType::ChestBlock => 18,
+            ItemType::Apple => 22,
         }
     }
 
@@ -203,6 +216,7 @@ impl ItemType {
             17 => Some(ItemType::StoneAxe),
             18 => Some(ItemType::StoneShovel),
             19 => Some(ItemType::ChestBlock),
+            20 => Some(ItemType::Apple),
             _ => None,
         }
     }
@@ -254,6 +268,7 @@ impl ItemType {
             ItemType::StoneAxe => 1,
             ItemType::StoneShovel => 1,
             ItemType::ChestBlock => 64,
+            ItemType::Apple => 64,
         }
     }
 
@@ -279,6 +294,7 @@ impl ItemType {
             ItemType::StoneAxe => None,
             ItemType::StoneShovel => None,
             ItemType::ChestBlock => Some(BlockType::Chest),
+            ItemType::Apple => None,
         }
     }
 }
@@ -404,6 +420,7 @@ pub fn get_quad_color_from_texture_id(id: u8) -> Color565 {
         14 => Color565::from_rgb888(120, 85, 45),
         15 | 16 | 17 => Color565::from_rgb888(150, 150, 150),
         18 => Color565::from_rgb888(120, 85, 45),
+        22 => Color565::from_rgb888(200, 40, 40),
         19 | 20 | 21 => Color565::from_rgb888(110, 110, 110),
 
         _ => Color565::from_rgb888(0, 0, 0),
