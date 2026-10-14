@@ -65,6 +65,9 @@ pub mod player {
 
     pub const WOODEN_TOOL_SPEED: f32 = 2.;
     pub const STONE_TOOL_SPEED: f32 = 3.;
+    pub const IRON_TOOL_SPEED: f32 = 4.5;
+    pub const GOLD_TOOL_SPEED: f32 = 6.;
+    pub const DIAMOND_TOOL_SPEED: f32 = 7.5;
 
     pub const MAX_HEALTH: f32 = 20.;
     pub const MAX_HUNGER: f32 = 20.;
@@ -174,6 +177,16 @@ pub enum ItemType {
     IronIngot = 24,
     GoldIngot = 25,
     Diamond = 26,
+
+    IronPickaxe = 27,
+    IronAxe = 28,
+    IronShovel = 29,
+    GoldPickaxe = 30,
+    GoldAxe = 31,
+    GoldShovel = 32,
+    DiamondPickaxe = 33,
+    DiamondAxe = 34,
+    DiamondShovel = 35,
 }
 
 impl ItemType {
@@ -207,6 +220,15 @@ impl ItemType {
             ItemType::IronIngot => 30,
             ItemType::GoldIngot => 31,
             ItemType::Diamond => 32,
+            ItemType::IronPickaxe => 33,
+            ItemType::IronAxe => 34,
+            ItemType::IronShovel => 35,
+            ItemType::GoldPickaxe => 36,
+            ItemType::GoldAxe => 37,
+            ItemType::GoldShovel => 38,
+            ItemType::DiamondPickaxe => 39,
+            ItemType::DiamondAxe => 40,
+            ItemType::DiamondShovel => 41,
         }
     }
 
@@ -240,6 +262,15 @@ impl ItemType {
             24 => Some(ItemType::IronIngot),
             25 => Some(ItemType::GoldIngot),
             26 => Some(ItemType::Diamond),
+            27 => Some(ItemType::IronPickaxe),
+            28 => Some(ItemType::IronAxe),
+            29 => Some(ItemType::IronShovel),
+            30 => Some(ItemType::GoldPickaxe),
+            31 => Some(ItemType::GoldAxe),
+            32 => Some(ItemType::GoldShovel),
+            33 => Some(ItemType::DiamondPickaxe),
+            34 => Some(ItemType::DiamondAxe),
+            35 => Some(ItemType::DiamondShovel),
             _ => None,
         }
     }
@@ -250,6 +281,13 @@ impl ItemType {
             ItemType::WoodenAxe => Some(ToolKind::Axe),
             ItemType::WoodenShovel => Some(ToolKind::Shovel),
             ItemType::StonePickaxe => Some(ToolKind::Pickaxe),
+            ItemType::IronPickaxe | ItemType::GoldPickaxe | ItemType::DiamondPickaxe => {
+                Some(ToolKind::Pickaxe)
+            }
+            ItemType::IronAxe | ItemType::GoldAxe | ItemType::DiamondAxe => Some(ToolKind::Axe),
+            ItemType::IronShovel | ItemType::GoldShovel | ItemType::DiamondShovel => {
+                Some(ToolKind::Shovel)
+            }
             ItemType::StoneAxe => Some(ToolKind::Axe),
             ItemType::StoneShovel => Some(ToolKind::Shovel),
             _ => None,
@@ -261,6 +299,9 @@ impl ItemType {
         match *self {
             ItemType::WoodenPickaxe | ItemType::WoodenAxe | ItemType::WoodenShovel => 1,
             ItemType::StonePickaxe | ItemType::StoneAxe | ItemType::StoneShovel => 2,
+            ItemType::IronPickaxe | ItemType::IronAxe | ItemType::IronShovel => 3,
+            ItemType::GoldPickaxe | ItemType::GoldAxe | ItemType::GoldShovel => 2,
+            ItemType::DiamondPickaxe | ItemType::DiamondAxe | ItemType::DiamondShovel => 4,
             _ => 0,
         }
     }
@@ -273,6 +314,15 @@ impl ItemType {
             }
             ItemType::StonePickaxe | ItemType::StoneAxe | ItemType::StoneShovel => {
                 player::STONE_TOOL_SPEED
+            }
+            ItemType::IronPickaxe | ItemType::IronAxe | ItemType::IronShovel => {
+                player::IRON_TOOL_SPEED
+            }
+            ItemType::GoldPickaxe | ItemType::GoldAxe | ItemType::GoldShovel => {
+                player::GOLD_TOOL_SPEED
+            }
+            ItemType::DiamondPickaxe | ItemType::DiamondAxe | ItemType::DiamondShovel => {
+                player::DIAMOND_TOOL_SPEED
             }
             _ => 1.,
         }
@@ -307,6 +357,15 @@ impl ItemType {
             ItemType::IronIngot => 64,
             ItemType::GoldIngot => 64,
             ItemType::Diamond => 64,
+            ItemType::IronPickaxe => 1,
+            ItemType::IronAxe => 1,
+            ItemType::IronShovel => 1,
+            ItemType::GoldPickaxe => 1,
+            ItemType::GoldAxe => 1,
+            ItemType::GoldShovel => 1,
+            ItemType::DiamondPickaxe => 1,
+            ItemType::DiamondAxe => 1,
+            ItemType::DiamondShovel => 1,
         }
     }
 
@@ -339,6 +398,15 @@ impl ItemType {
             ItemType::IronIngot => None,
             ItemType::GoldIngot => None,
             ItemType::Diamond => None,
+            ItemType::IronPickaxe => None,
+            ItemType::IronAxe => None,
+            ItemType::IronShovel => None,
+            ItemType::GoldPickaxe => None,
+            ItemType::GoldAxe => None,
+            ItemType::GoldShovel => None,
+            ItemType::DiamondPickaxe => None,
+            ItemType::DiamondAxe => None,
+            ItemType::DiamondShovel => None,
         }
     }
 }
@@ -505,6 +573,15 @@ pub fn get_quad_color_from_texture_id(id: u8) -> Color565 {
         30 => Color565::from_rgb888(200, 200, 200),
         31 => Color565::from_rgb888(240, 210, 90),
         32 => Color565::from_rgb888(120, 230, 240),
+        33 => Color565::from_rgb888(200, 200, 200),
+        34 => Color565::from_rgb888(200, 200, 200),
+        35 => Color565::from_rgb888(200, 200, 200),
+        36 => Color565::from_rgb888(240, 210, 90),
+        37 => Color565::from_rgb888(240, 210, 90),
+        38 => Color565::from_rgb888(240, 210, 90),
+        39 => Color565::from_rgb888(120, 230, 240),
+        40 => Color565::from_rgb888(120, 230, 240),
+        41 => Color565::from_rgb888(120, 230, 240),
         19 | 20 | 21 => Color565::from_rgb888(110, 110, 110),
 
         _ => Color565::from_rgb888(0, 0, 0),

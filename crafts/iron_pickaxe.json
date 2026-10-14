@@ -1,0 +1,15 @@
+{
+    "name": "iron_pickaxe",
+    "pattern": [
+        "xxx",
+        " s ",
+        " s "
+    ],
+    "strict_shape": true,
+    "palette": {
+        "x": 24,
+        "s": 12
+    },
+    "result": 27,
+    "result_amount": 1
+}

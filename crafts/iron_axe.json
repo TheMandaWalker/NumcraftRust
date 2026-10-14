@@ -1,0 +1,15 @@
+{
+    "name": "iron_axe",
+    "pattern": [
+        "xx ",
+        "xs ",
+        " s "
+    ],
+    "strict_shape": true,
+    "palette": {
+        "x": 24,
+        "s": 12
+    },
+    "result": 28,
+    "result_amount": 1
+}

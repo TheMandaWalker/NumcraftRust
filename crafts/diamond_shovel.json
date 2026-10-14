@@ -1,0 +1,15 @@
+{
+    "name": "diamond_shovel",
+    "pattern": [
+        "x  ",
+        "s  ",
+        "s  "
+    ],
+    "strict_shape": true,
+    "palette": {
+        "x": 26,
+        "s": 12
+    },
+    "result": 35,
+    "result_amount": 1
+}

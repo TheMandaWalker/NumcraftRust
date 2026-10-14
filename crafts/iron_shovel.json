@@ -1,0 +1,15 @@
+{
+    "name": "iron_shovel",
+    "pattern": [
+        "x  ",
+        "s  ",
+        "s  "
+    ],
+    "strict_shape": true,
+    "palette": {
+        "x": 24,
+        "s": 12
+    },
+    "result": 29,
+    "result_amount": 1
+}

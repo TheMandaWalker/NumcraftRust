@@ -1,0 +1,15 @@
+{
+    "name": "gold_axe",
+    "pattern": [
+        "xx ",
+        "xs ",
+        " s "
+    ],
+    "strict_shape": true,
+    "palette": {
+        "x": 25,
+        "s": 12
+    },
+    "result": 31,
+    "result_amount": 1
+}
