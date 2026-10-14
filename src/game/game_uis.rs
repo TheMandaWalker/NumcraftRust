@@ -194,6 +194,65 @@ impl Game {
         GameState::InGame
     }
 
+    pub fn chest_loop(&mut self, chest_pos: Vector3<isize>) -> GameState {
+        // Clear the hud
+        self.renderer
+            .draw_game(&mut self.world, &self.player, 0, &self.hud, false);
+
+        let inventories = [
+            &mut self.player.inventory,
+            self.world.get_chest_inventory_mut(chest_pos),
+        ];
+
+        // The chest is 9x3 and sits above the player inventory, its bottom row
+        // lines up with the first row of the player inventory
+        let mut ui = GameUI::new(true)
+            .with_slot_grid(Vector2::new(0, 0), 9, 3, 1, 24, 0)
+            .with_slot_grid(Vector2::new(64, 98), 6, 3, 0, 0, 6)
+            .with_slot_grid(Vector2::new(64, 198), 6, 1, 0, 18, 0)
+            .with_links(&[
+                (12, 18, NeighborDirection::Bottom),
+                (13, 19, NeighborDirection::Bottom),
+                (14, 20, NeighborDirection::Bottom),
+                (15, 21, NeighborDirection::Bottom),
+                (16, 22, NeighborDirection::Bottom),
+                (17, 23, NeighborDirection::Bottom),
+                (44, 0, NeighborDirection::Bottom),
+                (45, 1, NeighborDirection::Bottom),
+                (46, 2, NeighborDirection::Bottom),
+                (47, 3, NeighborDirection::Bottom),
+                (48, 4, NeighborDirection::Bottom),
+                (49, 5, NeighborDirection::Bottom),
+            ])
+            .sync(&inventories);
+
+        ui.selected_amount = None;
+
+        self.timing_manager.reset();
+
+        loop {
+            self.input_manager.update();
+            self.timing_manager.update();
+            self.input_manager.update_timing(&self.timing_manager);
+
+            let mut inventories = [
+                &mut self.player.inventory,
+                self.world.get_chest_inventory_mut(chest_pos),
+            ];
+
+            if !ui.update(&self.input_manager, &mut inventories) {
+                break;
+            }
+
+            self.renderer.draw_game_ui(&mut ui);
+
+            nadk::display::wait_for_vblank();
+            nadk::time::wait_milliseconds(50);
+        }
+
+        GameState::InGame
+    }
+
     fn player_inventory_creative_loop(&mut self) {
         // Clear the hud
         self.renderer
@@ -262,6 +321,22 @@ impl Game {
         creative_inventory.replace_slot_item_stack(
             14,
             ItemStack::new(crate::constants::ItemType::WoodenShovel, 1, true),
+        );
+        creative_inventory.replace_slot_item_stack(
+            15,
+            ItemStack::new(crate::constants::ItemType::ChestBlock, 1, true),
+        );
+        creative_inventory.replace_slot_item_stack(
+            16,
+            ItemStack::new(crate::constants::ItemType::StonePickaxe, 1, true),
+        );
+        creative_inventory.replace_slot_item_stack(
+            17,
+            ItemStack::new(crate::constants::ItemType::StoneAxe, 1, true),
+        );
+        creative_inventory.replace_slot_item_stack(
+            18,
+            ItemStack::new(crate::constants::ItemType::StoneShovel, 1, true),
         );
 
         let mut inventories = [&mut self.player.inventory, &mut creative_inventory];

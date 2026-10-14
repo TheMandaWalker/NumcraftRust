@@ -1,7 +1,10 @@
 use core::any::Any;
 
+use serde::{Deserialize, Serialize};
+
 use crate::constants::world::{
-    CHUNK_SIZE, ITEM_MAGNET_FORCE, MAX_ITEM_MERGING_DISTANCE, MAX_PLAYER_ITEM_MAGNET_DISTANCE,
+    CHEST_SLOTS, CHUNK_SIZE, ITEM_MAGNET_FORCE, MAX_ITEM_MERGING_DISTANCE,
+    MAX_PLAYER_ITEM_MAGNET_DISTANCE,
 };
 use crate::constants::{BlockType, EntityType, ItemType};
 use crate::entity::Entity;
@@ -25,15 +28,16 @@ const CHUNK_SIZE_I: isize = CHUNK_SIZE as isize;
 
 pub struct World {
     pub chunks_manager: ChunksManager,
-    registered_inventories: Vec<Inventory>,
+    chests: Vec<Chest>,
     loaded_entities: Vec<Entity>,
     next_available_entity_id: usize,
     world_generator: WorldGenerator,
 }
 
-pub struct RegisteredInventory {
-    inventory: Inventory,
-    block_pos: Option<Vector3<usize>>,
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Chest {
+    pub pos: (isize, isize, isize),
+    pub inventory: Inventory,
 }
 
 impl Default for World {
@@ -47,7 +51,7 @@ impl World {
     pub fn new() -> Self {
         let mut world = World {
             chunks_manager: ChunksManager::new(),
-            registered_inventories: Vec::new(),
+            chests: Vec::new(),
             loaded_entities: vec![Entity::new(0, EntityType::Player, None)], // The player entity is always loaded and id 0
             next_available_entity_id: 1,
             world_generator: WorldGenerator::new(),
@@ -221,10 +225,6 @@ impl World {
         self.world_generator.set_seed(seed);
     }
 
-    fn register_inventory(&mut self, inventory: Inventory) {
-        self.registered_inventories.push(inventory);
-    }
-
     pub fn get_all_entities_mut(&mut self) -> &mut Vec<Entity> {
         &mut self.loaded_entities
     }
@@ -283,6 +283,10 @@ impl World {
 
     pub fn replace_block_and_drop_item(&mut self, pos: Vector3<isize>, block_type: BlockType) {
         if let Some(current_block) = self.chunks_manager.get_block_in_world(pos) {
+            if current_block == BlockType::Chest {
+                self.drop_chest_contents(pos);
+            }
+
             let drop_type = current_block.get_dropped_item_type();
             if drop_type != ItemType::Air {
                 self.chunks_manager.set_block_in_world(pos, block_type);
@@ -290,6 +294,44 @@ impl World {
                     pos.map(|v| v as f32 + 0.5),
                     ItemStack::new(drop_type, 1, false),
                 );
+            }
+        }
+    }
+
+    /// The inventory of the chest at this position. The chest is created if it does not exist yet
+    pub fn get_chest_inventory_mut(&mut self, pos: Vector3<isize>) -> &mut Inventory {
+        let key = (pos.x, pos.y, pos.z);
+        let index = match self.chests.iter().position(|chest| chest.pos == key) {
+            Some(index) => index,
+            None => {
+                self.chests.push(Chest {
+                    pos: key,
+                    inventory: Inventory::new(CHEST_SLOTS),
+                });
+                self.chests.len() - 1
+            }
+        };
+
+        &mut self.chests[index].inventory
+    }
+
+    pub fn get_chests(&self) -> &Vec<Chest> {
+        &self.chests
+    }
+
+    pub fn set_chests(&mut self, chests: Vec<Chest>) {
+        self.chests = chests;
+    }
+
+    /// Remove the chest at this position and drop its items in the world
+    pub fn drop_chest_contents(&mut self, pos: Vector3<isize>) {
+        let key = (pos.x, pos.y, pos.z);
+        if let Some(index) = self.chests.iter().position(|chest| chest.pos == key) {
+            let chest = self.chests.remove(index);
+            for item_stack in chest.inventory.get_all_slots() {
+                if item_stack.get_item_type() != ItemType::Air {
+                    self.spawn_item_entity(pos.map(|v| v as f32 + 0.5), item_stack.clone());
+                }
             }
         }
     }
@@ -312,7 +354,7 @@ impl World {
             }
         }
         let max_block = (highest_chunk_y + 1) * CHUNK_SIZE_I;
-        let mut highest_block = max_block-1;
+        let mut highest_block = max_block - 1;
 
         for y in (0..max_block).rev() {
             if !self

@@ -72,6 +72,8 @@ impl Game {
 
     pub fn load_world(&mut self, file_name: &String, is_new: bool) -> GameState {
         // Load the world or create it if it doesn't exists yet
+        self.world.set_chests(Default::default());
+
         if is_new {
             self.save_manager.set_file_name(file_name);
 
@@ -136,6 +138,7 @@ impl Game {
             self.world.set_seed(world_info.world_seed);
         }
 
+        self.world.set_chests(self.save_manager.take_chests());
         self.save_manager.clean(); // Clear save manager to save memory
 
         if self.save_manager.get_game_mode() == GameMode::Creative {
@@ -173,11 +176,17 @@ impl Game {
                 }
             };
 
-            // OK on a crafting table opens it instead of placing a block
-            if self.input_manager.is_just_pressed(nadk::keyboard::Key::Ok)
-                && self.player.get_looked_block_type() == Some(BlockType::CraftingTable)
-            {
-                return GameState::OpenCraftingTable;
+            // OK on a crafting table or a chest opens it instead of placing a block
+            if self.input_manager.is_just_pressed(nadk::keyboard::Key::Ok) {
+                match self.player.get_looked_block() {
+                    Some((BlockType::CraftingTable, _)) => {
+                        return GameState::OpenCraftingTable;
+                    }
+                    Some((BlockType::Chest, chest_pos)) => {
+                        return GameState::OpenChest(chest_pos);
+                    }
+                    _ => {}
+                }
             }
 
             self.player.update(
@@ -252,6 +261,7 @@ impl Game {
                 GameState::CreateWorld(file_name) => self.create_world_menu_loop(&file_name),
                 GameState::OpenPlayerInventory(page) => self.player_inventory_loop(page),
                 GameState::OpenCraftingTable => self.crafting_table_loop(),
+                GameState::OpenChest(chest_pos) => self.chest_loop(chest_pos),
                 GameState::Quit => break,
             }
         }
@@ -265,6 +275,7 @@ pub enum GameState {
     InGame,
     OpenPlayerInventory(game_uis::PlayerInventoryPage),
     OpenCraftingTable,
+    OpenChest(Vector3<isize>),
     LoadWorld(String, bool), // String: filename, String: world name
     CreateWorld(String),     // String: file_name
     DeleteWorld(String),

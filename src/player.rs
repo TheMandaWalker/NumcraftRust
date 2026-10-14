@@ -83,10 +83,10 @@ impl Player {
         player_entity.rotation = *camera.get_rotation();
     }
 
-    pub fn get_looked_block_type(&self) -> Option<BlockType> {
+    pub fn get_looked_block(&self) -> Option<(BlockType, Vector3<isize>)> {
         self.ray_cast_result
             .as_ref()
-            .map(|result| result.block_type)
+            .map(|result| (result.block_type, result.block_pos))
     }
 
     pub fn set_inventory(&mut self, inventory: Inventory) {
@@ -193,6 +193,9 @@ impl Player {
         if game_mode == GameMode::Creative {
             if input_manager.is_just_pressed(nadk::keyboard::Key::Back) {
                 if let Some(result) = &self.ray_cast_result {
+                    if result.block_type == BlockType::Chest {
+                        world.drop_chest_contents(result.block_pos);
+                    }
                     world
                         .chunks_manager
                         .set_block_in_world(result.block_pos, BlockType::Air);

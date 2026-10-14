@@ -47,6 +47,7 @@ pub mod save_manager {
 
 pub mod world {
     pub const CHUNK_SIZE: usize = 8; // MAX 8
+    pub const CHEST_SLOTS: usize = 27;
 
     pub const MAX_ITEM_MERGING_DISTANCE: f32 = 2.;
     pub const ITEM_MAGNET_FORCE: f32 = 10.;
@@ -119,6 +120,7 @@ pub enum BlockType {
     Planks = 9,
     CraftingTable = 10,
     Bricks = 11,
+    Chest = 12,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -147,6 +149,8 @@ pub enum ItemType {
     StonePickaxe = 16,
     StoneAxe = 17,
     StoneShovel = 18,
+
+    ChestBlock = 19,
 }
 
 impl ItemType {
@@ -172,6 +176,7 @@ impl ItemType {
             ItemType::StonePickaxe => 19,
             ItemType::StoneAxe => 20,
             ItemType::StoneShovel => 21,
+            ItemType::ChestBlock => 18,
         }
     }
 
@@ -197,6 +202,7 @@ impl ItemType {
             16 => Some(ItemType::StonePickaxe),
             17 => Some(ItemType::StoneAxe),
             18 => Some(ItemType::StoneShovel),
+            19 => Some(ItemType::ChestBlock),
             _ => None,
         }
     }
@@ -247,6 +253,7 @@ impl ItemType {
             ItemType::StonePickaxe => 1,
             ItemType::StoneAxe => 1,
             ItemType::StoneShovel => 1,
+            ItemType::ChestBlock => 64,
         }
     }
 
@@ -271,6 +278,7 @@ impl ItemType {
             ItemType::StonePickaxe => None,
             ItemType::StoneAxe => None,
             ItemType::StoneShovel => None,
+            ItemType::ChestBlock => Some(BlockType::Chest),
         }
     }
 }
@@ -304,6 +312,10 @@ impl BlockType {
                 _ => 13,
             },
             BlockType::Bricks => 11,
+            BlockType::Chest => match dir {
+                QuadDir::Top | QuadDir::Bottom => 10,
+                _ => 18,
+            },
         }
     }
 
@@ -321,6 +333,7 @@ impl BlockType {
             9 => Some(BlockType::Planks),
             10 => Some(BlockType::CraftingTable),
             11 => Some(BlockType::Bricks),
+            12 => Some(BlockType::Chest),
             _ => None,
         }
     }
@@ -351,6 +364,7 @@ impl BlockType {
             BlockType::Planks => 1.2,
             BlockType::CraftingTable => 2.5,
             BlockType::Bricks => 2.,
+            BlockType::Chest => 2.5,
         }
     }
 
@@ -368,6 +382,7 @@ impl BlockType {
             BlockType::Planks => ItemType::PlanksBlock,
             BlockType::CraftingTable => ItemType::CraftingTableBlock,
             BlockType::Bricks => ItemType::BricksBlock,
+            BlockType::Chest => ItemType::ChestBlock,
         }
     }
 }
@@ -388,6 +403,7 @@ pub fn get_quad_color_from_texture_id(id: u8) -> Color565 {
         13 => Color565::from_rgb888(120, 95, 50),
         14 => Color565::from_rgb888(120, 85, 45),
         15 | 16 | 17 => Color565::from_rgb888(150, 150, 150),
+        18 => Color565::from_rgb888(120, 85, 45),
         19 | 20 | 21 => Color565::from_rgb888(110, 110, 110),
 
         _ => Color565::from_rgb888(0, 0, 0),

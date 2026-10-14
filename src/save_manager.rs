@@ -21,7 +21,7 @@ use crate::{
     },
     player::Player,
     renderer::Renderer,
-    world::{World, chunk::Chunk},
+    world::{Chest, World, chunk::Chunk},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -65,6 +65,7 @@ pub struct SaveManager {
     player_data: PlayerData,
     world_info: WorldInfo,
     pub file_name: Option<String>,
+    chests: Vec<Chest>,
 }
 
 impl SaveManager {
@@ -74,6 +75,7 @@ impl SaveManager {
             player_data: PlayerData::new(),
             world_info: WorldInfo::new(),
             file_name: None,
+            chests: Vec::new(),
         }
     }
 
@@ -128,6 +130,12 @@ impl SaveManager {
         self.player_data.rotation.1 = player_entity.rotation.y;
 
         self.player_data.inventory = player.inventory.clone();
+        self.chests = world.get_chests().clone();
+    }
+
+    /// Give the chests loaded from the save file to the world
+    pub fn take_chests(&mut self) -> Vec<Chest> {
+        core::mem::take(&mut self.chests)
     }
 
     pub fn get_existing_worlds(&self) -> Vec<String> {
@@ -185,6 +193,11 @@ impl SaveManager {
         let raw_player_data = to_allocvec(&self.player_data).unwrap();
         data_to_compress.extend((raw_player_data.len() as u16).to_be_bytes());
         data_to_compress.extend(raw_player_data);
+
+        // Chests are stored after the player data, so older saves still load
+        let raw_chests = to_allocvec(&self.chests).unwrap();
+        data_to_compress.extend((raw_chests.len() as u16).to_be_bytes());
+        data_to_compress.extend(raw_chests);
 
         data.extend_from_slice(&compress_prepend_size(&data_to_compress));
 
@@ -279,6 +292,26 @@ impl SaveManager {
                         return Err(SaveFileLoadError::CorruptedWorld);
                     }
 
+                    current_pos += player_data_size;
+
+                    // Older saves have no chests section
+                    if current_pos + 2 <= data.len() {
+                        let chests_size =
+                            u16::from_be_bytes([data[current_pos], data[current_pos + 1]]) as usize;
+                        current_pos += 2; // chests size
+
+                        if current_pos + chests_size > data.len() {
+                            return Err(SaveFileLoadError::CorruptedWorld);
+                        }
+                        let chests_raw = &data[current_pos..(current_pos + chests_size)];
+
+                        if let Ok(chests) = from_bytes::<Vec<Chest>>(chests_raw) {
+                            self.chests = chests;
+                        } else {
+                            return Err(SaveFileLoadError::CorruptedWorld);
+                        }
+                    }
+
                     Ok(())
                 } else {
                     Err(SaveFileLoadError::CorruptedWorld)
@@ -349,6 +382,7 @@ impl SaveManager {
         }
 
         self.player_data = PlayerData::new();
+        self.chests.clear();
     }
 }
 

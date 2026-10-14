@@ -1,0 +1,14 @@
+{
+    "name": "chest",
+    "pattern" : [
+        "xxx",
+        "x x",
+        "xxx"
+    ],
+    "strict_shape": true,
+    "palette": {
+        "x": 9
+    },
+    "result": 19,
+    "result_amount": 1
+}
