@@ -80,6 +80,11 @@ pub mod player {
     pub const APPLE_HUNGER_RESTORE: f32 = 4.;
 }
 
+pub mod furnace {
+    pub const SMELT_TIME: f32 = 5.;
+    pub const COAL_BURN_TIME: f32 = 10.;
+}
+
 pub mod physic {
     use nalgebra::Vector3;
 
@@ -138,6 +143,7 @@ pub enum BlockType {
     IronOre = 14,
     GoldOre = 15,
     DiamondOre = 16,
+    Furnace = 17,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -187,6 +193,8 @@ pub enum ItemType {
     DiamondPickaxe = 33,
     DiamondAxe = 34,
     DiamondShovel = 35,
+
+    FurnaceBlock = 36,
 }
 
 impl ItemType {
@@ -229,6 +237,7 @@ impl ItemType {
             ItemType::DiamondPickaxe => 39,
             ItemType::DiamondAxe => 40,
             ItemType::DiamondShovel => 41,
+            ItemType::FurnaceBlock => 42,
         }
     }
 
@@ -271,6 +280,7 @@ impl ItemType {
             33 => Some(ItemType::DiamondPickaxe),
             34 => Some(ItemType::DiamondAxe),
             35 => Some(ItemType::DiamondShovel),
+            36 => Some(ItemType::FurnaceBlock),
             _ => None,
         }
     }
@@ -328,6 +338,23 @@ impl ItemType {
         }
     }
 
+    /// The item this item turns into in a furnace, if any
+    pub fn get_smelted_item(&self) -> Option<ItemType> {
+        match *self {
+            ItemType::RawIron => Some(ItemType::IronIngot),
+            ItemType::RawGold => Some(ItemType::GoldIngot),
+            _ => None,
+        }
+    }
+
+    /// How long this item burns in a furnace, in seconds. 0 if it is not a fuel
+    pub fn get_fuel_time(&self) -> f32 {
+        match *self {
+            ItemType::Coal => furnace::COAL_BURN_TIME,
+            _ => 0.,
+        }
+    }
+
     pub fn get_max_stack_amount(&self) -> u8 {
         match *self {
             ItemType::Air => 0,
@@ -366,6 +393,7 @@ impl ItemType {
             ItemType::DiamondPickaxe => 1,
             ItemType::DiamondAxe => 1,
             ItemType::DiamondShovel => 1,
+            ItemType::FurnaceBlock => 64,
         }
     }
 
@@ -407,6 +435,7 @@ impl ItemType {
             ItemType::DiamondPickaxe => None,
             ItemType::DiamondAxe => None,
             ItemType::DiamondShovel => None,
+            ItemType::FurnaceBlock => Some(BlockType::Furnace),
         }
     }
 }
@@ -444,6 +473,10 @@ impl BlockType {
             BlockType::IronOre => 24,
             BlockType::GoldOre => 25,
             BlockType::DiamondOre => 26,
+            BlockType::Furnace => match dir {
+                QuadDir::Front => 42,
+                _ => 6,
+            },
             BlockType::Chest => match dir {
                 QuadDir::Top | QuadDir::Bottom => 10,
                 _ => 18,
@@ -470,6 +503,7 @@ impl BlockType {
             14 => Some(BlockType::IronOre),
             15 => Some(BlockType::GoldOre),
             16 => Some(BlockType::DiamondOre),
+            17 => Some(BlockType::Furnace),
             _ => None,
         }
     }
@@ -493,7 +527,8 @@ impl BlockType {
             | BlockType::CoalOre
             | BlockType::IronOre
             | BlockType::GoldOre
-            | BlockType::DiamondOre => Some(ToolKind::Pickaxe),
+            | BlockType::DiamondOre
+            | BlockType::Furnace => Some(ToolKind::Pickaxe),
             BlockType::Log | BlockType::Planks => Some(ToolKind::Axe),
             BlockType::Dirt | BlockType::Grass | BlockType::Sand => Some(ToolKind::Shovel),
             _ => None,
@@ -515,6 +550,7 @@ impl BlockType {
             BlockType::CraftingTable => 2.5,
             BlockType::Bricks => 2.,
             BlockType::Chest => 2.5,
+            BlockType::Furnace => 3.5,
             BlockType::CoalOre
             | BlockType::IronOre
             | BlockType::GoldOre
@@ -541,6 +577,7 @@ impl BlockType {
             BlockType::IronOre => ItemType::RawIron,
             BlockType::GoldOre => ItemType::RawGold,
             BlockType::DiamondOre => ItemType::Diamond,
+            BlockType::Furnace => ItemType::FurnaceBlock,
         }
     }
 }
@@ -582,6 +619,7 @@ pub fn get_quad_color_from_texture_id(id: u8) -> Color565 {
         39 => Color565::from_rgb888(120, 230, 240),
         40 => Color565::from_rgb888(120, 230, 240),
         41 => Color565::from_rgb888(120, 230, 240),
+        42 => Color565::from_rgb888(120, 120, 120),
         19 | 20 | 21 => Color565::from_rgb888(110, 110, 110),
 
         _ => Color565::from_rgb888(0, 0, 0),

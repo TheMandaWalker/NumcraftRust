@@ -5,7 +5,7 @@ calc_use!(alloc::vec::Vec);
 use lz4_flex::{compress, compress_prepend_size, decompress, decompress_size_prepended};
 use nalgebra::Vector3;
 use postcard::{from_bytes, to_allocvec};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::{
     constants::{BlockType, save_manager::WORLD_VERSION, world::CHUNK_SIZE},
@@ -21,7 +21,7 @@ use crate::{
     },
     player::Player,
     renderer::Renderer,
-    world::{Chest, World, chunk::Chunk},
+    world::{Chest, Furnace, World, chunk::Chunk},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -66,6 +66,7 @@ pub struct SaveManager {
     world_info: WorldInfo,
     pub file_name: Option<String>,
     chests: Vec<Chest>,
+    furnaces: Vec<Furnace>,
 }
 
 impl SaveManager {
@@ -76,6 +77,7 @@ impl SaveManager {
             world_info: WorldInfo::new(),
             file_name: None,
             chests: Vec::new(),
+            furnaces: Vec::new(),
         }
     }
 
@@ -131,11 +133,39 @@ impl SaveManager {
 
         self.player_data.inventory = player.inventory.clone();
         self.chests = world.get_chests().clone();
+        self.furnaces = world.get_furnaces().clone();
     }
 
     /// Give the chests loaded from the save file to the world
     pub fn take_chests(&mut self) -> Vec<Chest> {
         core::mem::take(&mut self.chests)
+    }
+
+    pub fn take_furnaces(&mut self) -> Vec<Furnace> {
+        core::mem::take(&mut self.furnaces)
+    }
+
+    /// Read a section made of a u16 size and its data. Returns None if the save has no more data,
+    /// which is the case for saves made before the section existed
+    fn read_optional_section<T: DeserializeOwned>(
+        data: &[u8],
+        current_pos: &mut usize,
+    ) -> Result<Option<T>, SaveFileLoadError> {
+        if *current_pos + 2 > data.len() {
+            return Ok(None);
+        }
+        let size = u16::from_be_bytes([data[*current_pos], data[*current_pos + 1]]) as usize;
+        *current_pos += 2;
+
+        if *current_pos + size > data.len() {
+            return Err(SaveFileLoadError::CorruptedWorld);
+        }
+        let raw = &data[*current_pos..(*current_pos + size)];
+        *current_pos += size;
+
+        from_bytes::<T>(raw)
+            .map(Some)
+            .map_err(|_| SaveFileLoadError::CorruptedWorld)
     }
 
     pub fn get_existing_worlds(&self) -> Vec<String> {
@@ -198,6 +228,10 @@ impl SaveManager {
         let raw_chests = to_allocvec(&self.chests).unwrap();
         data_to_compress.extend((raw_chests.len() as u16).to_be_bytes());
         data_to_compress.extend(raw_chests);
+
+        let raw_furnaces = to_allocvec(&self.furnaces).unwrap();
+        data_to_compress.extend((raw_furnaces.len() as u16).to_be_bytes());
+        data_to_compress.extend(raw_furnaces);
 
         data.extend_from_slice(&compress_prepend_size(&data_to_compress));
 
@@ -294,22 +328,16 @@ impl SaveManager {
 
                     current_pos += player_data_size;
 
-                    // Older saves have no chests section
-                    if current_pos + 2 <= data.len() {
-                        let chests_size =
-                            u16::from_be_bytes([data[current_pos], data[current_pos + 1]]) as usize;
-                        current_pos += 2; // chests size
-
-                        if current_pos + chests_size > data.len() {
-                            return Err(SaveFileLoadError::CorruptedWorld);
-                        }
-                        let chests_raw = &data[current_pos..(current_pos + chests_size)];
-
-                        if let Ok(chests) = from_bytes::<Vec<Chest>>(chests_raw) {
-                            self.chests = chests;
-                        } else {
-                            return Err(SaveFileLoadError::CorruptedWorld);
-                        }
+                    // Older saves have no chests or furnaces sections
+                    if let Some(chests) =
+                        Self::read_optional_section::<Vec<Chest>>(&data, &mut current_pos)?
+                    {
+                        self.chests = chests;
+                    }
+                    if let Some(furnaces) =
+                        Self::read_optional_section::<Vec<Furnace>>(&data, &mut current_pos)?
+                    {
+                        self.furnaces = furnaces;
                     }
 
                     Ok(())
@@ -383,6 +411,7 @@ impl SaveManager {
 
         self.player_data = PlayerData::new();
         self.chests.clear();
+        self.furnaces.clear();
     }
 }
 

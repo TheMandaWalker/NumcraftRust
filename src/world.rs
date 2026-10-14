@@ -6,7 +6,7 @@ use crate::constants::world::{
     CHEST_SLOTS, CHUNK_SIZE, ITEM_MAGNET_FORCE, MAX_ITEM_MERGING_DISTANCE,
     MAX_PLAYER_ITEM_MAGNET_DISTANCE,
 };
-use crate::constants::{BlockType, EntityType, ItemType};
+use crate::constants::{BlockType, EntityType, ItemType, furnace::SMELT_TIME};
 use crate::entity::Entity;
 use crate::entity::item::ItemEntityCustomData;
 use crate::inventory::{Inventory, ItemStack};
@@ -30,6 +30,7 @@ const CHUNK_SIZE_I: isize = CHUNK_SIZE as isize;
 pub struct World {
     pub chunks_manager: ChunksManager,
     chests: Vec<Chest>,
+    furnaces: Vec<Furnace>,
     loaded_entities: Vec<Entity>,
     next_available_entity_id: usize,
     world_generator: WorldGenerator,
@@ -39,6 +40,96 @@ pub struct World {
 pub struct Chest {
     pub pos: (isize, isize, isize),
     pub inventory: Inventory,
+}
+
+/// A furnace. Slot 0 is the input, slot 1 the fuel and slot 2 the output
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Furnace {
+    pub pos: (isize, isize, isize),
+    pub inventory: Inventory,
+    pub burn_time_left: f32,
+    pub cook_progress: f32,
+}
+
+const FURNACE_INPUT_SLOT: usize = 0;
+const FURNACE_FUEL_SLOT: usize = 1;
+const FURNACE_OUTPUT_SLOT: usize = 2;
+
+impl Furnace {
+    fn new(pos: (isize, isize, isize)) -> Self {
+        Furnace {
+            pos,
+            inventory: Inventory::new(3),
+            burn_time_left: 0.,
+            cook_progress: 0.,
+        }
+    }
+
+    /// Whether the output slot can take one more of this item
+    fn output_accepts(&self, item_type: ItemType) -> bool {
+        match self
+            .inventory
+            .get_item_stack_at_slot_index(FURNACE_OUTPUT_SLOT)
+        {
+            Some(stack) if stack.get_item_type() == ItemType::Air => true,
+            Some(stack) => {
+                stack.get_item_type() == item_type
+                    && stack.get_amount() < item_type.get_max_stack_amount()
+            }
+            None => false,
+        }
+    }
+
+    fn update(&mut self, delta_time: f32) {
+        let input = self
+            .inventory
+            .get_item_type_at_slot_index(FURNACE_INPUT_SLOT)
+            .unwrap_or(ItemType::Air);
+        let smelted = input.get_smelted_item();
+        let can_smelt = smelted.is_some_and(|item| self.output_accepts(item));
+
+        // When the last fuel is burnt out, burn the next one
+        if self.burn_time_left <= 0. && can_smelt {
+            let fuel = self
+                .inventory
+                .get_item_type_at_slot_index(FURNACE_FUEL_SLOT)
+                .unwrap_or(ItemType::Air);
+            if fuel.get_fuel_time() > 0. {
+                self.inventory.take_one(FURNACE_FUEL_SLOT);
+                self.burn_time_left = fuel.get_fuel_time();
+            }
+        }
+
+        let burning = self.burn_time_left > 0.;
+        if burning {
+            self.burn_time_left = (self.burn_time_left - delta_time).max(0.);
+        }
+
+        if can_smelt && burning {
+            self.cook_progress += delta_time;
+        } else if !can_smelt {
+            // The progress starts again if the input changes
+            self.cook_progress = 0.;
+        }
+
+        if self.cook_progress >= SMELT_TIME {
+            self.cook_progress = 0.;
+            if let Some(item) = smelted {
+                self.inventory.take_one(FURNACE_INPUT_SLOT);
+                let amount = match self
+                    .inventory
+                    .get_item_stack_at_slot_index(FURNACE_OUTPUT_SLOT)
+                {
+                    Some(stack) if stack.get_item_type() == item => stack.get_amount() + 1,
+                    _ => 1,
+                };
+                self.inventory.replace_slot_item_stack(
+                    FURNACE_OUTPUT_SLOT,
+                    ItemStack::new(item, amount, false),
+                );
+            }
+        }
+    }
 }
 
 impl Default for World {
@@ -53,6 +144,7 @@ impl World {
         let mut world = World {
             chunks_manager: ChunksManager::new(),
             chests: Vec::new(),
+            furnaces: Vec::new(),
             loaded_entities: vec![Entity::new(0, EntityType::Player, None)], // The player entity is always loaded and id 0
             next_available_entity_id: 1,
             world_generator: WorldGenerator::new(),
@@ -290,8 +382,8 @@ impl World {
         can_drop: bool,
     ) {
         if let Some(current_block) = self.chunks_manager.get_block_in_world(pos) {
-            if current_block == BlockType::Chest {
-                self.drop_chest_contents(pos);
+            if matches!(current_block, BlockType::Chest | BlockType::Furnace) {
+                self.drop_container_contents(pos);
             }
 
             // Leaves sometimes drop an apple, 1 time out of 10
@@ -338,12 +430,47 @@ impl World {
         self.chests = chests;
     }
 
-    /// Remove the chest at this position and drop its items in the world
-    pub fn drop_chest_contents(&mut self, pos: Vector3<isize>) {
+    /// The furnace at this position. It is created if it does not exist yet
+    pub fn get_furnace_mut(&mut self, pos: Vector3<isize>) -> &mut Furnace {
         let key = (pos.x, pos.y, pos.z);
-        if let Some(index) = self.chests.iter().position(|chest| chest.pos == key) {
-            let chest = self.chests.remove(index);
-            for item_stack in chest.inventory.get_all_slots() {
+        let index = match self.furnaces.iter().position(|furnace| furnace.pos == key) {
+            Some(index) => index,
+            None => {
+                self.furnaces.push(Furnace::new(key));
+                self.furnaces.len() - 1
+            }
+        };
+
+        &mut self.furnaces[index]
+    }
+
+    pub fn update_furnaces(&mut self, delta_time: f32) {
+        for furnace in self.furnaces.iter_mut() {
+            furnace.update(delta_time);
+        }
+    }
+
+    pub fn get_furnaces(&self) -> &Vec<Furnace> {
+        &self.furnaces
+    }
+
+    pub fn set_furnaces(&mut self, furnaces: Vec<Furnace>) {
+        self.furnaces = furnaces;
+    }
+
+    /// Remove the chest or furnace at this position and drop its items in the world
+    pub fn drop_container_contents(&mut self, pos: Vector3<isize>) {
+        let key = (pos.x, pos.y, pos.z);
+        let inventory = if let Some(index) = self.chests.iter().position(|chest| chest.pos == key) {
+            Some(self.chests.remove(index).inventory)
+        } else if let Some(index) = self.furnaces.iter().position(|furnace| furnace.pos == key) {
+            Some(self.furnaces.remove(index).inventory)
+        } else {
+            None
+        };
+
+        if let Some(inventory) = inventory {
+            for item_stack in inventory.get_all_slots() {
                 if item_stack.get_item_type() != ItemType::Air {
                     self.spawn_item_entity(pos.map(|v| v as f32 + 0.5), item_stack.clone());
                 }

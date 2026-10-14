@@ -73,6 +73,7 @@ impl Game {
     pub fn load_world(&mut self, file_name: &String, is_new: bool) -> GameState {
         // Load the world or create it if it doesn't exists yet
         self.world.set_chests(Default::default());
+        self.world.set_furnaces(Default::default());
 
         if is_new {
             self.save_manager.set_file_name(file_name);
@@ -139,6 +140,7 @@ impl Game {
         }
 
         self.world.set_chests(self.save_manager.take_chests());
+        self.world.set_furnaces(self.save_manager.take_furnaces());
         self.save_manager.clean(); // Clear save manager to save memory
 
         if self.save_manager.get_game_mode() == GameMode::Creative {
@@ -205,6 +207,9 @@ impl Game {
                     Some((BlockType::Chest, chest_pos)) => {
                         return GameState::OpenChest(chest_pos);
                     }
+                    Some((BlockType::Furnace, furnace_pos)) => {
+                        return GameState::OpenFurnace(furnace_pos);
+                    }
                     _ => {}
                 }
             }
@@ -226,8 +231,7 @@ impl Game {
 
             self.hud.update(&self.input_manager, &self.player);
             self.hud.sync(&self.player);
-            self.hud.show_survival_stats =
-                self.save_manager.get_game_mode() == GameMode::Survival;
+            self.hud.show_survival_stats = self.save_manager.get_game_mode() == GameMode::Survival;
 
             self.renderer.camera.update(
                 self.timing_manager.get_delta_time(),
@@ -238,6 +242,8 @@ impl Game {
             self.world.chunks_manager.check_mesh_regeneration();
             self.world
                 .update_entities(self.timing_manager.get_delta_time());
+            self.world
+                .update_furnaces(self.timing_manager.get_delta_time());
             self.physic_engine
                 .process(&mut self.world, self.timing_manager.get_delta_time());
 
@@ -288,6 +294,7 @@ impl Game {
                 GameState::OpenPlayerInventory(page) => self.player_inventory_loop(page),
                 GameState::OpenCraftingTable => self.crafting_table_loop(),
                 GameState::OpenChest(chest_pos) => self.chest_loop(chest_pos),
+                GameState::OpenFurnace(furnace_pos) => self.furnace_loop(furnace_pos),
                 GameState::Quit => break,
             }
         }
@@ -302,6 +309,7 @@ pub enum GameState {
     OpenPlayerInventory(game_uis::PlayerInventoryPage),
     OpenCraftingTable,
     OpenChest(Vector3<isize>),
+    OpenFurnace(Vector3<isize>),
     LoadWorld(String, bool), // String: filename, String: world name
     CreateWorld(String),     // String: file_name
     DeleteWorld(String),

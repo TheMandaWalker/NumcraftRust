@@ -1,0 +1,14 @@
+{
+    "name": "furnace",
+    "pattern": [
+        "xxx",
+        "x x",
+        "xxx"
+    ],
+    "strict_shape": true,
+    "palette": {
+        "x": 5
+    },
+    "result": 36,
+    "result_amount": 1
+}

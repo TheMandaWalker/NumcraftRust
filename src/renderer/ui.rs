@@ -3,6 +3,7 @@ use crate::{
         ItemType,
         color_palette::{GAMEUI_SLOT_COLOR, GAMEUI_SLOT_DEFAULT_OUTLINE_COLOR},
     },
+    game_ui::{GameUI, GameUIElements},
     nadk::{
         self,
         display::{
@@ -10,7 +11,6 @@ use crate::{
             push_rect_uniform,
         },
     },
-    game_ui::{GameUI, GameUIElements},
     renderer::*,
 };
 
@@ -249,6 +249,16 @@ impl Renderer {
                         height: 6,
                     },
                     Color565::from_rgb888(150, 150, 150),
+                );
+                // Progress, from left to right
+                nadk::display::push_rect_uniform(
+                    ScreenRect {
+                        x: element.pos.x + 2,
+                        y: element.pos.y + 12,
+                        width: (16. * filling.clamp(0., 1.)) as u16,
+                        height: 6,
+                    },
+                    Color565::from_rgb888(230, 140, 40),
                 );
 
                 for i in 0..=10 {

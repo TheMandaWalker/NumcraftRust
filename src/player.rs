@@ -272,8 +272,8 @@ impl Player {
         if game_mode == GameMode::Creative {
             if input_manager.is_just_pressed(nadk::keyboard::Key::Back) {
                 if let Some(result) = &self.ray_cast_result {
-                    if result.block_type == BlockType::Chest {
-                        world.drop_chest_contents(result.block_pos);
+                    if matches!(result.block_type, BlockType::Chest | BlockType::Furnace) {
+                        world.drop_container_contents(result.block_pos);
                     }
                     world
                         .chunks_manager

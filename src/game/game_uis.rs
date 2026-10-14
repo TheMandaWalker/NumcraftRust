@@ -1,5 +1,5 @@
 use crate::{
-    constants::ItemType,
+    constants::{ItemType, furnace::SMELT_TIME},
     game::*,
     game_ui::{ContainerNeighbors, GameUIElements, NeighborDirection},
     inventory::Inventory,
@@ -238,6 +238,84 @@ impl Game {
             let mut inventories = [
                 &mut self.player.inventory,
                 self.world.get_chest_inventory_mut(chest_pos),
+            ];
+
+            if !ui.update(&self.input_manager, &mut inventories) {
+                break;
+            }
+
+            self.renderer.draw_game_ui(&mut ui);
+
+            nadk::display::wait_for_vblank();
+            nadk::time::wait_milliseconds(50);
+        }
+
+        GameState::InGame
+    }
+
+    pub fn furnace_loop(&mut self, furnace_pos: Vector3<isize>) -> GameState {
+        // Clear the hud
+        self.renderer
+            .draw_game(&mut self.world, &self.player, 0, &self.hud, false);
+
+        let progress = self.world.get_furnace_mut(furnace_pos).cook_progress / SMELT_TIME;
+        let inventories = [
+            &mut self.player.inventory,
+            &mut self.world.get_furnace_mut(furnace_pos).inventory,
+        ];
+
+        // Slots: 24 input, 25 fuel, 26 output, 27 progress arrow
+        let mut ui = GameUI::new(true)
+            .with_slot_grid(Vector2::new(96, 8), 1, 1, 1, 24, 0)
+            .with_slot_grid(Vector2::new(96, 56), 1, 1, 1, 25, 1)
+            .with_element(
+                GameUIElements::create_one_way_slot_slot(1, 2),
+                Vector2::new(192, 32),
+                26,
+                ContainerNeighbors::default(),
+            )
+            .with_element(
+                GameUIElements::Arrow { filling: progress },
+                Vector2::new(144, 32),
+                27,
+                ContainerNeighbors::default(),
+            )
+            .with_slot_grid(Vector2::new(64, 98), 6, 3, 0, 0, 6)
+            .with_slot_grid(Vector2::new(64, 198), 6, 1, 0, 18, 0)
+            .with_links(&[
+                (12, 18, NeighborDirection::Bottom),
+                (13, 19, NeighborDirection::Bottom),
+                (14, 20, NeighborDirection::Bottom),
+                (15, 21, NeighborDirection::Bottom),
+                (16, 22, NeighborDirection::Bottom),
+                (17, 23, NeighborDirection::Bottom),
+                (24, 25, NeighborDirection::Bottom),
+                (25, 1, NeighborDirection::Bottom),
+            ])
+            .sync(&inventories);
+
+        ui.selected_amount = None;
+
+        self.timing_manager.reset();
+
+        loop {
+            self.input_manager.update();
+            self.timing_manager.update();
+            self.input_manager.update_timing(&self.timing_manager);
+            // The furnace keeps cooking while its interface is open
+            self.world
+                .update_furnaces(self.timing_manager.get_delta_time());
+
+            let progress = self.world.get_furnace_mut(furnace_pos).cook_progress / SMELT_TIME;
+            if let Some(arrow) = ui.get_element_with_id_mut(27) {
+                if let GameUIElements::Arrow { filling } = &mut arrow.element {
+                    *filling = progress;
+                }
+            }
+
+            let mut inventories = [
+                &mut self.player.inventory,
+                &mut self.world.get_furnace_mut(furnace_pos).inventory,
             ];
 
             if !ui.update(&self.input_manager, &mut inventories) {
