@@ -71,6 +71,12 @@ impl Player {
         player_entity.rotation = *camera.get_rotation();
     }
 
+    pub fn get_looked_block_type(&self) -> Option<BlockType> {
+        self.ray_cast_result
+            .as_ref()
+            .map(|result| result.block_type)
+    }
+
     pub fn set_inventory(&mut self, inventory: Inventory) {
         self.inventory = inventory
     }

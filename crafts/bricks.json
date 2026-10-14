@@ -1,0 +1,14 @@
+{
+    "name": "bricks",
+    "pattern" : [
+        "xx ",
+        "xx ",
+        "   "
+    ],
+    "strict_shape": false,
+    "palette": {
+        "x": 1
+    },
+    "result": 11,
+    "result_amount": 4
+}

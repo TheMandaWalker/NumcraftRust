@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     constants::{
+        BlockType,
         color_palette::MENU_BACKGROUND_COLOR,
         rendering::{MAX_FOV, MAX_RENDER_DISTANCE, MIN_FOV},
     },
@@ -172,6 +173,13 @@ impl Game {
                 }
             };
 
+            // OK on a crafting table opens it instead of placing a block
+            if self.input_manager.is_just_pressed(nadk::keyboard::Key::Ok)
+                && self.player.get_looked_block_type() == Some(BlockType::CraftingTable)
+            {
+                return GameState::OpenCraftingTable;
+            }
+
             self.player.update(
                 self.timing_manager.get_delta_time(),
                 &self.input_manager,
@@ -243,6 +251,7 @@ impl Game {
                 GameState::DeleteWorld(filename) => self.delete_world_menu_loop(&filename),
                 GameState::CreateWorld(file_name) => self.create_world_menu_loop(&file_name),
                 GameState::OpenPlayerInventory(page) => self.player_inventory_loop(page),
+                GameState::OpenCraftingTable => self.crafting_table_loop(),
                 GameState::Quit => break,
             }
         }
@@ -255,6 +264,7 @@ pub enum GameState {
     GoSelectWorld,
     InGame,
     OpenPlayerInventory(game_uis::PlayerInventoryPage),
+    OpenCraftingTable,
     LoadWorld(String, bool), // String: filename, String: world name
     CreateWorld(String),     // String: file_name
     DeleteWorld(String),
